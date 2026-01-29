@@ -21,7 +21,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
-  String _countryCode = '+591'; // Perú por defecto
+  String _countryCode = '+591';
   bool _isLoading = false;
 
   @override

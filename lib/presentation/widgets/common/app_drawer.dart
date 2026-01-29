@@ -45,18 +45,17 @@ class AppDrawer extends StatelessWidget {
                           width: 3,
                         ),
                       ),
-                      child: user?.photoUrl != null
-                          ? ClipOval(
-                              child: Image.network(
-                                user!.photoUrl!,
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : Icon(
-                              Icons.person,
-                              size: 35,
-                              color: AppColors.primary,
-                            ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/perfil.jpg',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.person,
+                            size: 35,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     // Nombre
@@ -256,7 +255,7 @@ class AppDrawer extends StatelessWidget {
               children: [
                 Icon(Icons.phone, size: 16, color: AppColors.primary),
                 const SizedBox(width: 8),
-                const Text('+591 XXX XXX XXX'),
+                const Text('+591 63790453'),
               ],
             ),
           ],

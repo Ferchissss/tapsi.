@@ -127,18 +127,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           width: 4,
                         ),
                       ),
-                      child: user?.photoUrl != null
-                          ? ClipOval(
-                              child: Image.network(
-                                user!.photoUrl!,
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : Icon(
-                              Icons.person,
-                              size: 60,
-                              color: Colors.white,
-                            ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/perfil.jpg',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.person,
+                            size: 60,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     ),
                     if (_isEditing)
                       Positioned(

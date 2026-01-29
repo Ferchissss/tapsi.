@@ -387,10 +387,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: AppColors.primary,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.person,
-                          color: Colors.white,
-                          size: 20,
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/perfil.jpg',
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.person,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
                         ),
                       ),
                     ),

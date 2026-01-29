@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geocoding/geocoding.dart' as geo;
 import 'package:latlong2/latlong.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tapsi/core/constants/colors.dart';
 import 'package:tapsi/core/constants/text_styles.dart';
 import 'package:tapsi/core/services/location_service.dart';
 import 'package:tapsi/data/models/location_model.dart';
+import 'package:tapsi/data/models/saved_location_model.dart';
 import 'package:tapsi/presentation/features/home/cubit/home_cubit.dart';
 import 'package:tapsi/presentation/widgets/common/empty_state.dart';
 import 'package:provider/provider.dart';
@@ -32,11 +35,16 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _isSearching = false;
   bool _showRecentSearches = true;
   List<String> _recentSearches = [];
+  List<SavedLocationModel> _savedLocations = [];
   
   late OfflineService _offlineService;
   late LocationService _locationService;
   double _currentLat = LocationService.tarijaLatitude;
   double _currentLng = LocationService.tarijaLongitude;
+  
+  final _auth = FirebaseAuth.instance;
+  final _db = FirebaseFirestore.instance;
+  late String _userId;
 
   @override
   void initState() {
@@ -45,12 +53,16 @@ class _SearchScreenState extends State<SearchScreen> {
     
     _offlineService = Provider.of<OfflineService>(context, listen: false);
     _locationService = LocationService();
+    _userId = _auth.currentUser?.uid ?? '';
     
     // Cargar búsquedas recientes
     _loadRecentSearches();
     
     // Obtener ubicación actual para ordenar por cercanía
     _getCurrentLocation();
+    
+    // Cargar direcciones guardadas
+    _loadSavedLocations();
     
     // Establecer hint según el tipo de selección
     if (widget.selectionType != null) {
@@ -80,6 +92,24 @@ class _SearchScreenState extends State<SearchScreen> {
       'Terminal de Buses',
       'Hospital San Juan de Dios',
     ];
+  }
+
+  Future<void> _loadSavedLocations() async {
+    try {
+      final snapshot = await _db
+          .collection('users')
+          .doc(_userId)
+          .collection('savedLocations')
+          .get();
+      
+      setState(() {
+        _savedLocations = snapshot.docs
+            .map((doc) => SavedLocationModel.fromJson(doc.data()))
+            .toList();
+      });
+    } catch (e) {
+      print('Error cargando direcciones guardadas: $e');
+    }
   }
 
   void _saveRecentSearch(String query) {
@@ -312,6 +342,51 @@ class _SearchScreenState extends State<SearchScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Direcciones guardadas del usuario
+        if (_savedLocations.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Text(
+              'Mis direcciones',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+          ..._savedLocations.map((location) {
+            // Obtener icono según el tipo
+            IconData icon = Icons.location_on;
+            if (location.isDefault) {
+              icon = Icons.home;
+            } else if (location.id?.contains('work') ?? false) {
+              icon = Icons.work;
+            }
+            
+            return ListTile(
+              leading: Icon(icon, color: AppColors.primary),
+              title: Text(location.name),
+              subtitle: Text(
+                location.address,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              onTap: () {
+                final locationModel = LocationModel(
+                  latitude: location.lat,
+                  longitude: location.lng,
+                  address: location.address,
+                  name: location.name,
+                  placeId: location.id ?? '',
+                );
+                _selectLocation(locationModel);
+              },
+            );
+          }).toList(),
+          const Divider(),
+        ],
+        
+        // Lugares frecuentes
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Text(
@@ -470,28 +545,103 @@ class _SearchScreenState extends State<SearchScreen> {
           // Lista de resultados o búsquedas recientes
           Expanded(
             child: _showRecentSearches
-                ? ListView(
-                    children: [
-                      // Ubicación actual
-                      ListTile(
-                        leading: const Icon(Icons.my_location),
-                        title: const Text('Usar mi ubicación actual'),
-                        subtitle: BlocBuilder<HomeCubit, HomeState>(
-                          builder: (context, state) {
-                            if (state is HomeLoaded) {
-                              return Text(
-                                '${state.currentLocation.address ?? 'Tarija'}',
-                                overflow: TextOverflow.ellipsis,
+                ? StreamBuilder<QuerySnapshot>(
+                    stream: _userId.isNotEmpty
+                        ? _db
+                            .collection('users')
+                            .doc(_userId)
+                            .collection('savedLocations')
+                            .snapshots()
+                        : Stream.empty(),
+                    builder: (context, snapshot) {
+                      List<SavedLocationModel> savedLocations = [];
+                      if (snapshot.hasData && snapshot.data != null) {
+                        savedLocations = snapshot.data!.docs
+                            .map((doc) => SavedLocationModel.fromJson(doc.data() as Map<String, dynamic>))
+                            .toList();
+                      }
+
+                      return ListView(
+                        children: [
+                          // Ubicación actual
+                          ListTile(
+                            leading: const Icon(Icons.my_location),
+                            title: const Text('Usar mi ubicación actual'),
+                            subtitle: BlocBuilder<HomeCubit, HomeState>(
+                              builder: (context, state) {
+                                if (state is HomeLoaded) {
+                                  return Text(
+                                    '${state.currentLocation.address ?? 'Tarija'}',
+                                    overflow: TextOverflow.ellipsis,
+                                  );
+                                }
+                                return const Text('Tarija, Bolivia');
+                              },
+                            ),
+                            onTap: _useCurrentLocation,
+                          ),
+                          const Divider(),
+                          
+                          // Direcciones guardadas
+                          if (savedLocations.isNotEmpty) ...[
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              child: Text(
+                                'Mis direcciones',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            ...savedLocations.map((location) {
+                              IconData icon = Icons.location_on;
+                              if (location.isDefault) {
+                                icon = Icons.home;
+                              }
+                              
+                              return ListTile(
+                                leading: Icon(icon, color: AppColors.primary),
+                                title: Text(location.name),
+                                subtitle: Text(
+                                  location.address,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                onTap: () {
+                                  final locationModel = LocationModel(
+                                    latitude: location.lat,
+                                    longitude: location.lng,
+                                    address: location.address,
+                                    name: location.name,
+                                    placeId: location.id ?? '',
+                                  );
+                                  _selectLocation(locationModel);
+                                },
                               );
-                            }
-                            return const Text('Tarija, Bolivia');
-                          },
-                        ),
-                        onTap: _useCurrentLocation,
-                      ),
-                      const Divider(),
-                      _buildRecentSearches(),
-                    ],
+                            }).toList(),
+                            const Divider(),
+                          ],
+                          
+                          // Lugares frecuentes
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Text(
+                              'Lugares frecuentes en Tarija',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          ..._recentSearches.map((search) => ListTile(
+                            leading: const Icon(Icons.location_on),
+                            title: Text(search),
+                            onTap: () => _selectRecentSearch(search),
+                          )).toList(),
+                        ],
+                      );
+                    },
                   )
                 : _buildSearchResults(),
           ),

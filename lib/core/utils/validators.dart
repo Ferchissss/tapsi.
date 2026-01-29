@@ -49,11 +49,11 @@ class Validators {
       return 'El código es obligatorio';
     }
     
-    if (value.length != 4) {
-      return 'El código debe tener 4 dígitos';
+    if (value.length != 6) {
+      return 'El código debe tener 6 dígitos';
     }
     
-    if (!RegExp(r'^\d{4}$').hasMatch(value)) {
+    if (!RegExp(r'^\d{6}$').hasMatch(value)) {
       return 'Solo se permiten números';
     }
     

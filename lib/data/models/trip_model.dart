@@ -53,40 +53,42 @@ class TripModel extends Equatable {
   });
   
   factory TripModel.fromJson(Map<String, dynamic> json) {
+    // Helper para parsear DateTime desde string o Timestamp de Firestore
+    DateTime _parseDateTime(dynamic value) {
+      if (value == null) return DateTime.now();
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.parse(value);
+      // Firestore Timestamp tiene método toDate()
+      if (value.runtimeType.toString() == 'Timestamp') {
+        return value.toDate() as DateTime;
+      }
+      return DateTime.now();
+    }
+
     return TripModel(
-      id: json['id'],
-      userId: json['userId'],
+      id: json['id'] ?? '',
+      userId: json['userId'] ?? '',
       driverId: json['driverId'],
-      status: json['status'],
-      originLat: (json['originLat'] as num).toDouble(),
-      originLng: (json['originLng'] as num).toDouble(),
-      originAddress: json['originAddress'],
-      destLat: (json['destLat'] as num).toDouble(),
-      destLng: (json['destLng'] as num).toDouble(),
-      destAddress: json['destAddress'],
-      vehicleType: json['vehicleType'],
-      estimatedFare: (json['estimatedFare'] as num).toDouble(),
+      status: json['status'] ?? 'unknown',
+      originLat: (json['originLat'] as num?)?.toDouble() ?? 0.0,
+      originLng: (json['originLng'] as num?)?.toDouble() ?? 0.0,
+      originAddress: json['originAddress'] ?? '',
+      destLat: (json['destLat'] as num?)?.toDouble() ?? 0.0,
+      destLng: (json['destLng'] as num?)?.toDouble() ?? 0.0,
+      destAddress: json['destAddress'] ?? '',
+      vehicleType: json['vehicleType'] ?? 'standard',
+      estimatedFare: (json['estimatedFare'] as num?)?.toDouble() ?? 0.0,
       finalFare: json['finalFare'] != null ? (json['finalFare'] as num).toDouble() : null,
-      estimatedDistance: (json['estimatedDistance'] as num).toDouble(),
+      estimatedDistance: (json['estimatedDistance'] as num?)?.toDouble() ?? 0.0,
       actualDistance: json['actualDistance'] != null ? (json['actualDistance'] as num).toDouble() : null,
-      estimatedDuration: (json['estimatedDuration'] as num).toInt(),
+      estimatedDuration: (json['estimatedDuration'] as num?)?.toInt() ?? 0,
       actualDuration: json['actualDuration'] != null ? (json['actualDuration'] as num).toInt() : null,
-      requestedAt: DateTime.parse(json['requestedAt']),
-      acceptedAt: json['acceptedAt'] != null 
-          ? DateTime.parse(json['acceptedAt']) 
-          : null,
-      arrivedAt: json['arrivedAt'] != null 
-          ? DateTime.parse(json['arrivedAt']) 
-          : null,
-      startedAt: json['startedAt'] != null 
-          ? DateTime.parse(json['startedAt']) 
-          : null,
-      completedAt: json['completedAt'] != null 
-          ? DateTime.parse(json['completedAt']) 
-          : null,
-      cancelledAt: json['cancelledAt'] != null 
-          ? DateTime.parse(json['cancelledAt']) 
-          : null,
+      requestedAt: _parseDateTime(json['requestedAt']),
+      acceptedAt: json['acceptedAt'] != null ? _parseDateTime(json['acceptedAt']) : null,
+      arrivedAt: json['arrivedAt'] != null ? _parseDateTime(json['arrivedAt']) : null,
+      startedAt: json['startedAt'] != null ? _parseDateTime(json['startedAt']) : null,
+      completedAt: json['completedAt'] != null ? _parseDateTime(json['completedAt']) : null,
+      cancelledAt: json['cancelledAt'] != null ? _parseDateTime(json['cancelledAt']) : null,
     );
   }
   

@@ -3,6 +3,8 @@
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:math';
 import 'package:tapsi/core/services/api_service.dart';
 import 'package:tapsi/data/models/trip_model.dart';
 import 'package:tapsi/data/models/driver_model.dart';
@@ -68,6 +70,12 @@ class TripCubit extends Cubit<TripState> {
           // ⏳ Buscando chofer
           print('⏳ Buscando chofer disponible...');
           emit(TripSearchingDriver(trip: _currentTrip!));
+          
+          // Esperar 3 segundos y obtener conductor de Firebase
+          await Future.delayed(const Duration(seconds: 3));
+          
+          // Obtener conductor aleatorio de Firebase
+          await _assignRandomDriver();
         }
       } else {
         emit(TripError(message: response['error'] ?? 'Error al crear viaje'));
@@ -147,6 +155,10 @@ class TripCubit extends Cubit<TripState> {
         driver: _currentDriver!,
         eta: eta ?? 5.0,
       ));
+
+      // Esperar 30 segundos y transicionar automáticamente a "conductor llegó"
+      await Future.delayed(const Duration(seconds: 5));
+      await driverArrived();
     } catch (e) {
       print('❌ Error updating trip to arriving: $e');
     }
@@ -221,6 +233,10 @@ class TripCubit extends Cubit<TripState> {
       );
 
       emit(TripInProgress(trip: _currentTrip!, driver: _currentDriver!));
+
+      // Esperar 5 segundos y transicionar automáticamente a "viaje completado"
+      await Future.delayed(const Duration(seconds: 5));
+      await completeTrip();
     } catch (e) {
       print('❌ Error starting trip: $e');
       emit(TripError(message: 'Error al iniciar viaje'));
@@ -229,7 +245,7 @@ class TripCubit extends Cubit<TripState> {
 
   // 6. COMPLETAR VIAJE
   Future<void> completeTrip() async {
-    if (_currentTrip == null) return;
+    if (_currentTrip == null || _currentDriver == null) return;
 
     try {
       emit(TripLoading(message: 'Finalizando viaje...'));
@@ -247,7 +263,7 @@ class TripCubit extends Cubit<TripState> {
         destAddress: _currentTrip!.destAddress,
         vehicleType: _currentTrip!.vehicleType,
         estimatedFare: _currentTrip!.estimatedFare,
-        finalFare: _currentTrip!.estimatedFare, // En producción vendría del backend
+        finalFare: _currentTrip!.estimatedFare,
         estimatedDistance: _currentTrip!.estimatedDistance,
         actualDistance: _currentTrip!.estimatedDistance,
         estimatedDuration: _currentTrip!.estimatedDuration,
@@ -259,6 +275,40 @@ class TripCubit extends Cubit<TripState> {
         completedAt: DateTime.now(),
         cancelledAt: _currentTrip!.cancelledAt,
       );
+
+      // 💾 GUARDAR EN FIREBASE - Historial del usuario
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_currentTrip!.userId)
+          .collection('trips')
+          .doc(_currentTrip!.id)
+          .set(
+            {
+              'id': _currentTrip!.id,
+              'driverId': _currentTrip!.driverId,
+              'status': 'completed',
+              'originLat': _currentTrip!.originLat,
+              'originLng': _currentTrip!.originLng,
+              'originAddress': _currentTrip!.originAddress,
+              'destLat': _currentTrip!.destLat,
+              'destLng': _currentTrip!.destLng,
+              'destAddress': _currentTrip!.destAddress,
+              'vehicleType': _currentTrip!.vehicleType,
+              'estimatedFare': _currentTrip!.estimatedFare,
+              'finalFare': _currentTrip!.finalFare,
+              'estimatedDistance': _currentTrip!.estimatedDistance,
+              'actualDistance': _currentTrip!.actualDistance,
+              'estimatedDuration': _currentTrip!.estimatedDuration,
+              'actualDuration': _currentTrip!.actualDuration,
+              'requestedAt': _currentTrip!.requestedAt,
+              'acceptedAt': _currentTrip!.acceptedAt,
+              'arrivedAt': _currentTrip!.arrivedAt,
+              'startedAt': _currentTrip!.startedAt,
+              'completedAt': _currentTrip!.completedAt,
+            },
+          );
+
+      print('✅ Viaje guardado en Firebase: ${_currentTrip!.id}');
 
       emit(TripCompleted(trip: _currentTrip!));
     } catch (e) {
@@ -322,6 +372,46 @@ class TripCubit extends Cubit<TripState> {
       } else if (currentState is TripInProgress) {
         emit(TripInProgress(trip: _currentTrip!, driver: _currentDriver!));
       }
+    }
+  }
+
+  // Obtener un conductor aleatorio disponible de Firebase Firestore
+  Future<void> _assignRandomDriver() async {
+    try {
+      print('🔍 Buscando conductor disponible en Firebase...');
+      
+      // Obtener todos los conductores de la colección 'drivers' en Firestore
+      final QuerySnapshot driversSnapshot = await FirebaseFirestore.instance
+          .collection('drivers')
+          .get();
+
+      final List<QueryDocumentSnapshot> driverDocs = driversSnapshot.docs;
+      
+      if (driverDocs.isEmpty) {
+        print('❌ No hay conductores disponibles');
+        emit(TripError(message: 'No hay conductores disponibles en este momento'));
+        return;
+      }
+
+      // Seleccionar un conductor aleatorio
+      final random = Random();
+      final randomIndex = random.nextInt(driverDocs.length);
+      final driverDoc = driverDocs[randomIndex];
+      
+      final driverData = driverDoc.data() as Map<String, dynamic>;
+      
+      // Agregar el ID al documento si no lo tiene
+      if (!driverData.containsKey('id')) {
+        driverData['id'] = driverDoc.id;
+      }
+      
+      final assignedDriver = DriverModel.fromJson(driverData);
+      print('✅ Conductor asignado: ${assignedDriver.name}');
+      
+      onDriverAssigned(assignedDriver);
+    } catch (e) {
+      print('❌ Error al asignar conductor: $e');
+      emit(TripError(message: 'Error al asignar conductor: $e'));
     }
   }
 

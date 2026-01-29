@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:tapsi/core/constants/colors.dart';
@@ -71,26 +72,6 @@ class _TripWaitingScreenState extends State<TripWaitingScreen> {
         ],
       ),
     );
-  }
-
-  // ✅ NUEVO: Simular transiciones de estados (temporal para testing)
-  void _simulateTransitions(BuildContext context) {
-    final cubit = context.read<TripCubit>();
-    final currentState = cubit.state;
-
-    if (currentState is TripDriverAssigned) {
-      // Simular: Chofer en camino
-      cubit.driverArriving(eta: 3.0);
-    } else if (currentState is TripDriverArriving) {
-      // Simular: Chofer llegó
-      cubit.driverArrived();
-    } else if (currentState is TripDriverArrived) {
-      // Simular: Iniciar viaje
-      cubit.startTrip();
-    } else if (currentState is TripInProgress) {
-      // Simular: Completar viaje
-      cubit.completeTrip();
-    }
   }
 
   @override
@@ -178,13 +159,6 @@ class _TripWaitingScreenState extends State<TripWaitingScreen> {
             return _buildSearchingDriver(widget.trip, isDark);
           },
         ),
-        // ✅ BOTÓN DE TESTING (solo en desarrollo)
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _simulateTransitions(context),
-          label: const Text('Siguiente Estado'),
-          icon: const Icon(Icons.skip_next),
-          backgroundColor: AppColors.primary,
-        ),
       ),
     );
   }
@@ -202,12 +176,11 @@ class _TripWaitingScreenState extends State<TripWaitingScreen> {
           selectedDestination: null,
         ),
         Container(color: Colors.black.withOpacity(0.3)),
-        SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                margin: const EdgeInsets.all(24),
+        Center(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
                 padding: const EdgeInsets.all(32),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
@@ -221,6 +194,7 @@ class _TripWaitingScreenState extends State<TripWaitingScreen> {
                   ],
                 ),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(
                       width: 80,
@@ -256,7 +230,7 @@ class _TripWaitingScreenState extends State<TripWaitingScreen> {
                   ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ],
@@ -280,16 +254,234 @@ class _TripWaitingScreenState extends State<TripWaitingScreen> {
           bottom: 0,
           left: 0,
           right: 0,
-          child: _buildDriverInfoPanel(
-            driver,
-            trip,
-            isDark,
-            statusText: 'Conductor asignado',
-            statusColor: AppColors.primary,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 15,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Título
+                  Text(
+                    'Tu conductor está aquí',
+                    style: AppTextStyles.h2.copyWith(
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Foto grande del conductor
+                  Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.primary,
+                        width: 4,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.3),
+                          blurRadius: 15,
+                          spreadRadius: 3,
+                        ),
+                      ],
+                    ),
+                    child: driver.photoUrl != null
+                        ? ClipOval(
+                            child: Image.network(
+                              driver.photoUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 70,
+                              ),
+                            ),
+                          )
+                        : Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 70,
+                          ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Información del conductor
+                  Text(
+                    driver.name,
+                    style: AppTextStyles.h2.copyWith(
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                      fontSize: 24,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Rating y viajes
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.star, color: Colors.amber, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${driver.rating.toStringAsFixed(1)}',
+                        style: AppTextStyles.bodyBold.copyWith(
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                        ),
+                      ),
+                      Text(
+                        ' • ${driver.totalTrips} viajes',
+                        style: AppTextStyles.body.copyWith(
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Información del vehículo con imagen
+                  if (driver.vehicle != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkSurface.withOpacity(0.5)
+                            : AppColors.lightSurface.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          // Imagen del vehículo
+                          Container(
+                            width: 120,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.grey.withOpacity(0.3),
+                            ),
+                            child: Image.asset(
+                              _getVehicleImage(driver.vehicle!.type),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Center(
+                                child: Icon(
+                                  Icons.directions_car,
+                                  size: 40,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Detalles del vehículo
+                          Text(
+                            driver.vehicle!.displayName,
+                            style: AppTextStyles.bodyBold.copyWith(
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : AppColors.lightTextPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${driver.vehicle!.plate} • ${driver.vehicle!.color}',
+                            style: AppTextStyles.caption.copyWith(
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.lightTextSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // Botones de aceptar/rechazar
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _cancelTrip(context),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: AppColors.error,
+                              width: 2,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: Text(
+                            'Rechazar',
+                            style: AppTextStyles.button.copyWith(
+                              color: AppColors.error,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // Aceptar el viaje - transicionar al siguiente estado
+                            context.read<TripCubit>().driverArriving(eta: 5.0);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.success,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: Text(
+                            'Aceptar viaje',
+                            style: AppTextStyles.button.copyWith(
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ],
     );
+  }
+
+  // Método para obtener imagen del vehículo según el tipo
+  String _getVehicleImage(String vehicleType) {
+    switch (vehicleType.toLowerCase()) {
+      case 'standard':
+      case 'sedan':
+        return 'assets/images/honda.jfif';
+      case 'premium':
+      case 'suv':
+        return 'assets/images/toyota.jpg';
+      default:
+        return 'assets/images/toyota.jpg';
+    }
   }
 
   // 3️⃣ CONDUCTOR EN CAMINO
@@ -322,6 +514,7 @@ class _TripWaitingScreenState extends State<TripWaitingScreen> {
             statusColor: AppColors.warning,
             showEta: true,
             eta: eta,
+            showVehicleImage: true,
           ),
         ),
       ],
@@ -349,6 +542,7 @@ class _TripWaitingScreenState extends State<TripWaitingScreen> {
             statusText: ' Conductor llegó - Esperándote',
             statusColor: AppColors.success,
             showStartTripButton: true,
+            showVehicleImage: true,
           ),
         ),
       ],
@@ -379,7 +573,7 @@ class _TripWaitingScreenState extends State<TripWaitingScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '🚗 Viaje en progreso',
+                  'Viaje en progreso',
                   style: AppTextStyles.h3.copyWith(color: AppColors.primary),
                 ),
                 const SizedBox(height: 16),
@@ -419,6 +613,7 @@ class _TripWaitingScreenState extends State<TripWaitingScreen> {
     bool showEta = false,
     double? eta,
     bool showStartTripButton = false,
+    bool showVehicleImage = false,
   }) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -514,6 +709,66 @@ class _TripWaitingScreenState extends State<TripWaitingScreen> {
             ],
           ),
           const SizedBox(height: 24),
+          // Imagen del vehículo (si aplica)
+          if (showVehicleImage && driver.vehicle != null)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.darkSurface.withOpacity(0.5)
+                    : AppColors.lightSurface.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Imagen del vehículo
+                  Container(
+                    width: 120,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey.withOpacity(0.3),
+                    ),
+                    child: Image.asset(
+                      _getVehicleImage(driver.vehicle!.type),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: Icon(
+                          Icons.directions_car,
+                          size: 40,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Detalles del vehículo
+                  Text(
+                    driver.vehicle!.displayName,
+                    style: AppTextStyles.bodyBold.copyWith(
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.lightTextPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${driver.vehicle!.plate} • ${driver.vehicle!.color}',
+                    style: AppTextStyles.caption.copyWith(
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (showVehicleImage) const SizedBox(height: 16),
           // Botones de acción
           if (showStartTripButton)
             SizedBox(

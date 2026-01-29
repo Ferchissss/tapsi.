@@ -375,13 +375,14 @@ class ApiService {
       final user = _auth.currentUser;
       if (user == null) return {'success': false, 'error': 'No autenticado'};
 
-      // Firestore no soporta offset eficiente; para mantener compatibilidad con
-      // la UI actual, traemos (page * limit) y luego hacemos slice local.
+      // Obtener viajes del usuario desde la subcolección de usuarios
+      // Esto no requiere índice compuesto ya que la ruta es específica del usuario
       final fetch = page * limit;
 
       final querySnap = await _db
+          .collection('users')
+          .doc(user.uid)
           .collection('trips')
-          .where('userId', isEqualTo: user.uid)
           .orderBy('requestedAt', descending: true)
           .limit(fetch)
           .get();
@@ -405,6 +406,7 @@ class ApiService {
         },
       };
     } catch (e) {
+      print('❌ Error al cargar historial: $e');
       return {'success': false, 'error': 'Error al cargar historial: $e'};
     }
   }

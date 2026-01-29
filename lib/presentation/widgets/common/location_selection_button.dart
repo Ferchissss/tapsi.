@@ -33,7 +33,7 @@ class LocationSelectionButton extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isActive ? AppColors.primary : 
                  isDark ? AppColors.darkBorder : AppColors.lightBorder,
@@ -42,41 +42,26 @@ class LocationSelectionButton extends StatelessWidget {
         boxShadow: [
           if (isActive)
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.1),
-              blurRadius: 8,
+              color: AppColors.primary.withOpacity(0.15),
+              blurRadius: 12,
               spreadRadius: 2,
             ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Icono
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: isActive ? AppColors.primary : 
-                           isDark ? AppColors.darkDisabled : AppColors.lightDisabled,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    label.toLowerCase().contains('origen') ? 
-                      Icons.location_on : Icons.location_pin,
-                    color: isActive ? AppColors.white : 
-                           isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                    size: 20,
-                  ),
-                ),
-                
-                const SizedBox(width: 12),
-                
                 // Texto
                 Expanded(
                   child: Column(
@@ -86,17 +71,20 @@ class LocationSelectionButton extends StatelessWidget {
                         label,
                         style: AppTextStyles.caption.copyWith(
                           color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                          letterSpacing: 1.2,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       address != null
                           ? Text(
                               address!,
                               style: AppTextStyles.body.copyWith(
                                 color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                                fontWeight: FontWeight.w500,
                               ),
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             )
                           : Text(
@@ -109,44 +97,142 @@ class LocationSelectionButton extends StatelessWidget {
                   ),
                 ),
                 
-                // Botones de acción
-                Row(
-                  children: [
-                    // Botón de mapa
-                    if (onMapTap != null)
-                      IconButton(
-                        icon: Icon(
-                          Icons.map,
-                          size: 20,
-                          color: AppColors.primary,
+                const SizedBox(width: 8),
+                
+                // Botón de búsqueda (solo icono)
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onTap,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.search,
+                        size: 24,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+                
+                // Botón de mapa (con icono de ubicación igual al que estaba a la izquierda)
+                if (onMapTap != null) ...[
+                  const SizedBox(width: 8),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onMapTap,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: isActive 
+                              ? AppColors.primary.withOpacity(0.15)
+                              : (isDark ? AppColors.darkDisabled : AppColors.lightDisabled).withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        onPressed: onMapTap,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 40,
-                          minHeight: 40,
+                        child: Icon(
+                          label.toLowerCase().contains('origen') ? 
+                            Icons.location_on : Icons.location_pin,
+                          color: isActive ? AppColors.primary : 
+                                 (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                          size: 24,
                         ),
                       ),
-                    
-                    // Botón de limpiar
-                    if (showClearButton && onClearTap != null)
-                      IconButton(
-                        icon: Icon(
-                          Icons.clear,
-                          size: 20,
+                    ),
+                  ),
+                ],
+                
+                // Botón de borrar
+                if (showClearButton && onClearTap != null) ...[
+                  const SizedBox(width: 8),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onClearTap,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.close,
+                          size: 18,
                           color: AppColors.error,
                         ),
-                        onPressed: onClearTap,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 40,
-                          minHeight: 40,
-                        ),
                       ),
-                  ],
-                ),
+                    ),
+                  ),
+                ],
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Widget auxiliar para los botones de acción
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: color.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: color,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ],
           ),
         ),
       ),

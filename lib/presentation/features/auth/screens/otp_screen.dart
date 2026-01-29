@@ -162,7 +162,7 @@ class _OTPScreenState extends State<OTPScreen> {
             // Campo OTP
             PinCodeTextField(
               appContext: context,
-              length: 4,
+              length: 6,
               controller: _otpController,
               keyboardType: TextInputType.number,
               animationType: AnimationType.fade,
