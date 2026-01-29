@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:tapsi/core/constants/colors.dart';
 import 'package:tapsi/core/constants/text_styles.dart';
 import 'package:tapsi/core/providers/app_provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tapsi/presentation/features/auth/cubit/auth_cubit.dart';
 import 'package:tapsi/presentation/features/profile/screens/profile_screen.dart';
 import 'package:tapsi/presentation/features/profile/screens/saved_locations_screen.dart';
 import 'package:tapsi/presentation/features/trip/screens/trip_history_screen.dart';
@@ -221,13 +223,20 @@ class AppDrawer extends StatelessWidget {
   }
 
   void _logout(BuildContext context) async {
+    // 1. Primero llamar al AuthCubit.logout()
+    final authCubit = context.read<AuthCubit>();
+    await authCubit.logout();  // Esto emite AuthUnauthenticated
+    
+    // 2. Luego logout de AppProvider
     final appProvider = Provider.of<AppProvider>(context, listen: false);
     await appProvider.logout();
-    // Navegar al login
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      '/login',
-      (route) => false,
-    );
+    
+    // 3. El BlocBuilder automáticamente navega a LoginScreen
+    // porque ve el estado AuthUnauthenticated, así que NO necesitamos
+    // navegación manual aquí. Solo cerramos el drawer.
+    if (context.mounted) {
+      Navigator.of(context).pop(); // Cerrar el drawer
+    }
   }
 
   void _showSupport(BuildContext context) {
