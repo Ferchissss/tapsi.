@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "937077799052",
+    "project_id": "tapsi-d9222",
+    "storage_bucket": "tapsi-d9222.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:937077799052:android:176bc5f5f0aa77b7b363a9",
+        "android_client_info": {
+          "package_name": "com.example.tapsi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3twDU2akR_UHWTEKmlnFzYp9pyHTj3Bk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

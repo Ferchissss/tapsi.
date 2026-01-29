@@ -1,0 +1,87 @@
+name: tapsi
+description: "Aplicación de taxi rápida y segura"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI y Animaciones
+  cupertino_icons: ^1.0.6
+  flutter_svg: ^2.1.1
+  lottie: ^3.3.2
+  animations: ^2.0.7
+
+  # Estado y Gestión
+  flutter_bloc: ^9.1.1
+  provider: ^6.1.5
+  equatable: ^2.0.8
+
+  # Navegación
+  go_router: ^17.0.1
+
+  # HTTP y API
+  dio: ^5.4.0
+  retrofit: ^4.9.2
+  logger: ^2.0.0
+
+  # Maps - OPENSTREETMAP (gratuito, sin tarjeta)
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.0
+  geolocator: ^11.0.1
+  geocoding: ^4.0.0
+  
+  # Widgets comunes que necesitaremos
+  cached_network_image: ^3.3.0
+  path_provider: ^2.1.1
+  
+  # Para manejar rutas
+  flutter_polyline_points: ^3.0.0
+  
+  # Storage
+  shared_preferences: ^2.2.2
+  flutter_secure_storage: ^10.0.0
+
+  # Utilidades
+  intl: ^0.20.2
+  url_launcher: ^6.1.14
+  connectivity_plus: ^7.0.0
+  flutter_dotenv: ^6.0.0
+  permission_handler: ^12.0.1
+  country_code_picker: ^3.4.1
+  pin_code_fields: ^8.0.1
+  mask_text_input_formatter: ^2.5.0
+  modal_bottom_sheet: ^3.0.0
+  universal_platform: ^1.1.0
+
+  # Firebase
+  firebase_core: ^2.32.0
+  firebase_auth: ^4.17.0
+  cloud_firestore: ^4.17.5
+
+  socket_io_client: ^2.0.3+1
+  # Para manejo de notificaciones push
+  firebase_messaging: ^14.7.10
+  # Para cache y offline
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  http: ^1.1.0
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.7
+  hive_generator: ^2.0.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/animations/
+    - assets/icons/
+    - .env
